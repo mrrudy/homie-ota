@@ -42,6 +42,71 @@
 </tr>
 %end
 </table>
+<h3>OpenHab config</h3>
+%import json
+%config = json.loads(sensor['$implementation/config'])
+<pre><code>
+// ***** {{data['name']}}::{{device}} ************** BEGIN 
+
+  String {{data['name']}}_name "Device name: [%s]" (gNames) { mqtt="<[nasmqtt:homie/{{device}}/$name:state:REGEX((.*))]" }
+  Switch {{data['name']}}_online "Device online: [%s]" (gReachable) { mqtt="<[nasmqtt:homie/{{device}}/$online:state:JS(homie-tf.js)"}
+
+  %for key in sorted(sensor):
+    %if key.endswith('/$type'):
+      %if sensor[key] == 'blinds':
+  Rollershutter {{data['name']}}_{{key.replace('/$type','')}} "{{data['name']}}->{{sensor[key]}}->{{key.replace('/$type','')}}" (g{{sensor[key]}}, gHomieSensors) {
+    mqtt="
+      >[nasmqtt:homie/{{device}}/{{key.replace('/$type','')}}/position/set:command:*:default],
+      <[nasmqtt:homie/{{device}}/{{key.replace('/$type','')}}/position:state:default]
+      "
+  }
+      %elif sensor[key] == 'button':
+  String {{data['name']}}_{{key.replace('/$type','')}} "{{data['name']}}->{{sensor[key]}}->{{key.replace('/$type','')}}" (g{{sensor[key]}}, gHomieSensors) {
+    mqtt="<[nasmqtt:homie/{{device}}/{{key.replace('/$type','')}}/event:state:default]"
+  }
+      %else:
+  //!!! UNKNOWS SENSOR TYPE: {{sensor[key]}} YOU ARE ON YOUR OWN
+  String {{data['name']}}_{{key.replace('/$type','')}} "{{data['name']}}->{{sensor[key]}}->{{key.replace('/$type','')}}" (g{{sensor[key]}}, gHomieSensors) {
+    mqtt="<[nasmqtt:homie/{{device}}/{{key.replace('/$type','')}}/event:state:default]"
+  }
+      %end
+    %end
+  %end
+  %for setting in sorted (config['settings']):
+    %if type(config['settings'][setting]) == int:
+    Number {{data['name']}}_setting_{{setting}} "{{data['name']}}->settings->{{setting}}: [%s]" (gHomieSettings) {
+      mqtt="
+          <[nasmqtt:homie/{{device}}/$implementation/config:state:JSONPATH($.settings.{{setting}})],
+          >[nasmqtt:homie/{{device}}/$implementation/config/set:command:*:JS(homie-settings-{{setting}}.js)]
+      "
+    }
+  /*********** TODO for U:
+  cat >> /etc/openhab2/transform/homie-settings-{{setting}}.js
+  result = '{"settings":{"{{setting}}":' + input + '}}';
+  ************/
+
+    %elif type(config['settings'][setting]) == bool:
+    String {{data['name']}}_setting_{{setting}} "{{data['name']}}->settings->{{setting}}?" (gHomieSettings) {
+      mqtt="
+          <[nasmqtt:homie/{{device}}/$implementation/config:state:JS(homie-settings-{{setting}}-get.js)],
+          >[nasmqtt:homie/{{device}}/$implementation/config/set:command:*:JS(homie-settings-{{setting}}.js)]
+      "
+    }
+  /*********** TODO for U:
+  cat >> /etc/openhab2/transform/homie-settings-{{setting}}.js
+  result = '{"settings":{"{{setting}}":' + ((input == "ON") ? "true" : "false") + '}}';
+
+  cat >> /etc/openhab2/transform/homie-settings-{{setting}}-get.js
+  result = ((JSON.parse(input)["settings"]["{{setting}}"]) == true ? "ON" : "OFF");
+  ************/
+
+    %else:
+  //  conf(string):: {{setting}}:: {{config['settings'][setting]}}
+    %end
+  %end
+
+// ***** {{data['name']}}::{{device}} ************** END
+</code></pre>
 <script type="application/javascript">
 $('.delete').bind('click', function (e){
   e.preventDefault();
