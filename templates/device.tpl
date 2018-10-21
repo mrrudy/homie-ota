@@ -46,11 +46,12 @@
 %import json
 %config = json.loads(sensor['$implementation/config'])
 <pre><code>
-// ***** {{data['name']}}::{{device}} ************** BEGIN 
+// ***** {{data['name']}}::{{device}} ************** BEGIN *** .items
 
   String {{data['name']}}_name "Device name: [%s]" (gNames) { mqtt="<[nasmqtt:homie/{{device}}/$name:state:REGEX((.*))]" }
   Switch {{data['name']}}_online "Device online: [%s]" (gReachable) { mqtt="<[nasmqtt:homie/{{device}}/$online:state:JS(homie-tf.js)"}
-
+  % sitemap = 'Text item=' + data['name'] + '_online icon="switch" visibility=[' + data['name'] + '_online==OFF]\n'
+  % additional_config = ''
   %for key in sorted(sensor):
     %if key.endswith('/$type'):
       %if sensor[key] == 'blinds':
@@ -60,18 +61,22 @@
       <[nasmqtt:homie/{{device}}/{{key.replace('/$type','')}}/position:state:default]
       "
   }
+  % sitemap += 'Default item=' + data['name'] + '_' + key.replace('/$type','') + ' label="' + data['name'] + '->' + sensor[key] + '->' + key.replace('/$type','') + '" visibility=[' + data['name'] + '_online==ON]\n\n'
+  % additional_config += '  Slider item=' + data['name'] + '_' + key.replace('/$type','') + '\n'
       %elif sensor[key] == 'button':
   String {{data['name']}}_{{key.replace('/$type','')}} "{{data['name']}}->{{sensor[key]}}->{{key.replace('/$type','')}}" (g{{sensor[key]}}, gHomieSensors) {
     mqtt="<[nasmqtt:homie/{{device}}/{{key.replace('/$type','')}}/event:state:default]"
   }
       %else:
-  //!!! UNKNOWS SENSOR TYPE: {{sensor[key]}} YOU ARE ON YOUR OWN
+  //!!! UNKNOWN SENSOR TYPE: {{sensor[key]}} YOU ARE ON YOUR OWN
   String {{data['name']}}_{{key.replace('/$type','')}} "{{data['name']}}->{{sensor[key]}}->{{key.replace('/$type','')}}" (g{{sensor[key]}}, gHomieSensors) {
     mqtt="<[nasmqtt:homie/{{device}}/{{key.replace('/$type','')}}/event:state:default]"
   }
       %end
     %end
   %end
+  % sitemap += 'Text item=' + data['name'] +' label="' + data['name'] + ' config " icon="settings" visibility=[' + data['name'] +'_online==ON] {\n'
+  % sitemap += additional_config
   %for setting in sorted (config['settings']):
     %if type(config['settings'][setting]) == int:
     Number {{data['name']}}_setting_{{setting}} "{{data['name']}}->settings->{{setting}}: [%s]" (gHomieSettings) {
@@ -80,6 +85,7 @@
           >[nasmqtt:homie/{{device}}/$implementation/config/set:command:*:JS(homie-settings-{{setting}}.js)]
       "
     }
+    % sitemap += '  Setpoint item=' + data['name'] + '_setting_' + setting + ' //minValue=1000 maxValue=60000 step=500\n'
   /*********** TODO for U:
   cat >> /etc/openhab2/transform/homie-settings-{{setting}}.js
   result = '{"settings":{"{{setting}}":' + input + '}}';
@@ -92,6 +98,7 @@
           >[nasmqtt:homie/{{device}}/$implementation/config/set:command:*:JS(homie-settings-{{setting}}.js)]
       "
     }
+    % sitemap += '  Switch item=' + data['name'] + '_setting_' + setting + ' \n'
   /*********** TODO for U:
   cat >> /etc/openhab2/transform/homie-settings-{{setting}}.js
   result = '{"settings":{"{{setting}}":' + ((input == "ON") ? "true" : "false") + '}}';
@@ -104,8 +111,16 @@
   //  conf(string):: {{setting}}:: {{config['settings'][setting]}}
     %end
   %end
+  % sitemap += '}\n'
 
-// ***** {{data['name']}}::{{device}} ************** END
+// ***** {{data['name']}}::{{device}} ************** END *** .items
+
+// ***** {{data['name']}}::{{device}} ************** BEGIN *** .sitemap
+
+{{sitemap}}
+
+// ***** {{data['name']}}::{{device}} ************** END *** .sitemap
+
 </code></pre>
 <script type="application/javascript">
 $('.delete').bind('click', function (e){
