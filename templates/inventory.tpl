@@ -17,44 +17,55 @@
 </p>
 
 <h3>Registered devices</h3>
-<table border="1">
-<thead>
-<tr>
-  <th>online</th><th>signal</th><th>device</th><th>ipaddress</th><th>uptime</th><th>fwname</th><th>fwversion</th><th>name</th>
-</tr>
-</thead>
-%for device in sorted(db):
-<tr>
-   <td class="online"><img src="{{base_url}}/{{db[device].get('online', 'false')}}.png"
-   		      alt="{{db[device].get('online', 'false')}}" /></td>
+  <table border="1">
+  <thead>
+  <tr>
+    <th>online</th><th>signal</th><th>device</th><th>ipaddress</th><th>uptime</th><th>fwname</th><th>fwversion</th><th>Update name</th>
+  </tr>
+  </thead>
+  %for device in sorted(db):
+  <tr>
+     <td class="online"><img src="{{base_url}}/{{db[device].get('online', 'false')}}.png"
+     		      alt="{{db[device].get('online', 'false')}}" /></td>
 
-%if db[device].get('online', 'false') == 'true':
-   <td class="signal"><div class="pBar" data-from="0" data-to="{{ db[device].get('signal', 0) }}"></div></td>
-%else:
-   <td class="signal"><div class="pBar" data-from="0" data-to="0"></div></td>
-%end
-   <td class="device"><a href="{{base_url}}/device/{{device}}">{{device}}</a></td>
-
-%for item in ['localip', 'human_uptime']:
-  %if item in db[device] and db[device].get('online', 'false') == 'true':
-    <td>{{db[device][item]}}</td>
+  %if db[device].get('online', 'false') == 'true':
+     <td class="signal"><div class="pBar" data-from="0" data-to="{{ db[device].get('signal', 0) }}"></div></td>
   %else:
-    <td></td>
+     <td class="signal"><div class="pBar" data-from="0" data-to="0"></div></td>
   %end
-%end
+     <td class="device"><a href="{{base_url}}/device/{{device}}">{{device}}</a></td>
 
-%for item in ['fwname', 'fwversion', 'name']:
-  %if item in db[device]:
-    <td>{{db[device][item]}}</td>
-  %else:
-    <td></td>
+  %for item in ['localip', 'human_uptime']:
+    %if item in db[device] and db[device].get('online', 'false') == 'true':
+      <td>{{db[device][item]}}</td>
+    %else:
+      <td></td>
+    %end
   %end
-%end
 
-</tr>
-%end
-</table>
+  %for item in ['fwname', 'fwversion']:
+    %if item in db[device]:
+      <td>{{db[device][item]}}</td>
+    %else:
+      <td></td>
+    %end
+  %end
+  %for item in ['name']:
+    %if item in db[device]:
+      <td>
+        <form action="{{base_url}}/updateDeviceName" method="post" enctype="multipart/form-data">
+          <input type="hidden" name="device" value="{{device}}">
+          <input type="text" name="newName" value="{{db[device][item]}}"><input type="submit" value="Update">
+        </form>
+      </td>
+    %else:
+      <td></td>
+    %end
+  %end
 
+  </tr>
+  %end
+  </table>
 <h3>Schedule OTA update</h3>
 <form action="{{base_url}}/update" method="post" enctype="multipart/form-data">
   <table border="0">

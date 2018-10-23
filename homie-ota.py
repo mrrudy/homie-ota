@@ -375,6 +375,39 @@ def update():
         logging.info(info)
     return info
 
+@route('/updateDeviceName', method='POST')
+@conditional_decorator('HTTP_USER' in globals() and 'HTTP_PASSWORD' in globals(), auth_basic(check))
+def update():
+    device = request.forms.get('device')
+    newName = request.forms.get('newName')
+
+    if device == '-':
+        logging.error("New name request is aborted due to no device chosen")
+        return "New name request aborted; no device chosen"
+    if newName == '-':
+        logging.error("New name cannot be empty")
+        return "New name cannot be empty"
+
+    # we are dealing with a homie 2.0 device
+    if not device in db :
+        info = "Unable to find {} in device list".format(device)
+        logging.error(info)
+    else:
+        logging.debug("Homie 2.0 device")
+        try:
+#            (fwname, fwversion) = firmware.split('@')
+#            logging.debug("Firmware Name: {}, Firmware Version: {}".format(fwname, fwversion))
+#mosquitto_pub -m '{"name":"esp/01/uniRelay"}' -t 'homie/84f3eb0a4d7e/$implementation/config/set'
+                    topic = "%s/%s/$implementation/config/set" % (MQTT_SENSOR_PREFIX, device)
+                    mqttc.publish(topic, payload='{"name":"%s"}' % newName, qos=1, retain=False)
+                    logging.debug("New name: ".format(newName))
+                    info = "New name '%s' set for device %s " % (newName, device)
+                    logging.info(info)
+        except Exception as e:
+            info = str(e)
+            logging.error("Generic error: {}".format(str(e)))
+    return info
+
 # Handle deleting a device from the mqtt broker, and the local db.
 @route('/device/<device_id>', method='DELETE')
 @conditional_decorator('HTTP_USER' in globals() and 'HTTP_PASSWORD' in globals(), auth_basic(check))
