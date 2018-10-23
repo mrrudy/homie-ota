@@ -77,38 +77,40 @@
   %end
   % sitemap += 'Text item=' + data['name'] +' label="' + data['name'] + ' config " icon="settings" visibility=[' + data['name'] +'_online==ON] {\n'
   % sitemap += additional_config
-  %for setting in sorted (config['settings']):
-    %if type(config['settings'][setting]) == int:
-    Number {{data['name']}}_setting_{{setting}} "{{data['name']}}->settings->{{setting}}: [%s]" (gHomieSettings) {
-      mqtt="
-          <[nasmqtt:homie/{{device}}/$implementation/config:state:JSONPATH($.settings.{{setting}})],
-          >[nasmqtt:homie/{{device}}/$implementation/config/set:command:*:JS(homie-settings-{{setting}}.js)]
-      "
-    }
-    % sitemap += '  Setpoint item=' + data['name'] + '_setting_' + setting + ' //minValue=1000 maxValue=60000 step=500\n'
-  /*********** TODO for U:
-  cat >> /etc/openhab2/transform/homie-settings-{{setting}}.js
-  result = '{"settings":{"{{setting}}":' + input + '}}';
-  ************/
+  % if 'settings' in config:
+    %for setting in sorted (config['settings']):
+      %if type(config['settings'][setting]) == int:
+      Number {{data['name']}}_setting_{{setting}} "{{data['name']}}->settings->{{setting}}: [%s]" (gHomieSettings) {
+        mqtt="
+            <[nasmqtt:homie/{{device}}/$implementation/config:state:JSONPATH($.settings.{{setting}})],
+            >[nasmqtt:homie/{{device}}/$implementation/config/set:command:*:JS(homie-settings-{{setting}}.js)]
+        "
+      }
+      % sitemap += '  Setpoint item=' + data['name'] + '_setting_' + setting + ' //minValue=1000 maxValue=60000 step=500\n'
+    /*********** TODO for U:
+    cat >> /etc/openhab2/transform/homie-settings-{{setting}}.js
+    result = '{"settings":{"{{setting}}":' + input + '}}';
+    ************/
 
-    %elif type(config['settings'][setting]) == bool:
-    String {{data['name']}}_setting_{{setting}} "{{data['name']}}->settings->{{setting}}?" (gHomieSettings) {
-      mqtt="
-          <[nasmqtt:homie/{{device}}/$implementation/config:state:JS(homie-settings-{{setting}}-get.js)],
-          >[nasmqtt:homie/{{device}}/$implementation/config/set:command:*:JS(homie-settings-{{setting}}.js)]
-      "
-    }
-    % sitemap += '  Switch item=' + data['name'] + '_setting_' + setting + ' \n'
-  /*********** TODO for U:
-  cat >> /etc/openhab2/transform/homie-settings-{{setting}}.js
-  result = '{"settings":{"{{setting}}":' + ((input == "ON") ? "true" : "false") + '}}';
+      %elif type(config['settings'][setting]) == bool:
+      String {{data['name']}}_setting_{{setting}} "{{data['name']}}->settings->{{setting}}?" (gHomieSettings) {
+        mqtt="
+            <[nasmqtt:homie/{{device}}/$implementation/config:state:JS(homie-settings-{{setting}}-get.js)],
+            >[nasmqtt:homie/{{device}}/$implementation/config/set:command:*:JS(homie-settings-{{setting}}.js)]
+        "
+      }
+      % sitemap += '  Switch item=' + data['name'] + '_setting_' + setting + ' \n'
+    /*********** TODO for U:
+    cat >> /etc/openhab2/transform/homie-settings-{{setting}}.js
+    result = '{"settings":{"{{setting}}":' + ((input == "ON") ? "true" : "false") + '}}';
 
-  cat >> /etc/openhab2/transform/homie-settings-{{setting}}-get.js
-  result = ((JSON.parse(input)["settings"]["{{setting}}"]) == true ? "ON" : "OFF");
-  ************/
+    cat >> /etc/openhab2/transform/homie-settings-{{setting}}-get.js
+    result = ((JSON.parse(input)["settings"]["{{setting}}"]) == true ? "ON" : "OFF");
+    ************/
 
-    %else:
-  //  conf(string):: {{setting}}:: {{config['settings'][setting]}}
+      %else:
+    //  conf(string):: {{setting}}:: {{config['settings'][setting]}}
+      %end
     %end
   %end
   % sitemap += '}\n'
