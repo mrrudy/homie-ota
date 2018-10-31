@@ -55,7 +55,7 @@
   %for key in sorted(sensor):
     %if key.endswith('/$type'):
       %if sensor[key] == 'blinds':
-  Rollershutter {{data['name']}}_{{key.replace('/$type','')}} "{{data['name']}}->{{sensor[key]}}->{{key.replace('/$type','')}}" (g{{sensor[key]}}, gHomieSensors) {
+  Rollershutter {{data['name']}}_{{key.replace('/$type','')}} "{{data['name']}}->{{sensor[key]}}->{{key.replace('/$type','')}}" (g{{sensor[key]}}, gHomieSensors) [ "Lighting" ] {
     mqtt="
       >[nasmqtt:homie/{{device}}/{{key.replace('/$type','')}}/position/set:command:*:default],
       <[nasmqtt:homie/{{device}}/{{key.replace('/$type','')}}/position:state:default]
